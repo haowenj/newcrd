@@ -51,35 +51,58 @@ func (r *NewDepReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	dep := &k8sappsv1.Deployment{}
 	err := r.Get(ctx, req.NamespacedName, newcrd)
 	if err != nil {
-		r.Recorder.Event(newcrd, k8scorev1.EventTypeWarning, "FailedGetNewcrd", err.Error())
+		if !errors.IsNotFound(err) {
+			r.Recorder.Event(newcrd, k8scorev1.EventTypeWarning, "FailedGetNewcrd", err.Error())
+		}
 		return ctrl.Result{}, nil
 	}
 	err = r.Get(ctx, req.NamespacedName, dep)
 	if err != nil {
+		//如果查不到这个deployment就去创建
 		if errors.IsNotFound(err) {
 			logs.Info("Deployment Not Found " + req.NamespacedName.Name)
 			deploy := createDeployment(newcrd)
+			//binding deployment to podsbook
+			// 调用SetControllerReference方法只是往被控制对象的结构体里加入了关联信息，并没有更新到etcd里，需要调用create或者update方法更新etcd里的数据才能起效果
+			if err = ctrl.SetControllerReference(newcrd, deploy, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
 			err = r.Create(ctx, deploy)
 			if err != nil {
 				r.Recorder.Event(newcrd, k8scorev1.EventTypeWarning, "FailedCreateDeployment", err.Error())
 				return ctrl.Result{}, err
 			}
 			r.Recorder.Event(newcrd, k8scorev1.EventTypeNormal, "SuccessCreateDeployment", fmt.Sprintf("success create deployment: %s", req.NamespacedName.Name))
+			//status是子资源，更新的时候使用Status接口，直接调用update方法更新podsbook对象不起作用
 			newcrd.Status.RealReplica = *newcrd.Spec.Replica
 			err = r.Status().Update(ctx, newcrd)
 			if err != nil {
 				r.Recorder.Event(newcrd, k8scorev1.EventTypeWarning, "FailedUpdateStatus", err.Error())
 				return ctrl.Result{}, err
 			}
-		} else {
-			r.Recorder.Event(newcrd, k8scorev1.EventTypeWarning, "FailedGetDeployment", err.Error())
+		}
+		return ctrl.Result{}, err
+	}
+	//如果查到了看下是否需要更新
+	if newcrd.Status.RealReplica != *newcrd.Spec.Replica {
+		newcrd.Status.RealReplica = *newcrd.Spec.Replica
+		err = r.Status().Update(ctx, newcrd)
+		if err != nil {
+			r.Recorder.Event(newcrd, k8scorev1.EventTypeWarning, "FailedUpdateStatus", err.Error())
 			return ctrl.Result{}, err
 		}
 	}
-	//binding deployment to podsbook
-	if err = ctrl.SetControllerReference(newcrd, dep, r.Scheme); err != nil {
-		return ctrl.Result{}, err
+
+	if *dep.Spec.Replicas != *newcrd.Spec.Replica || dep.Spec.Template.Spec.Containers[0].Image != *newcrd.Spec.Image {
+		dep.Spec.Replicas = newcrd.Spec.Replica
+		dep.Spec.Template.Spec.Containers[0].Image = *newcrd.Spec.Image
+		err = r.Update(ctx, dep)
+		if err != nil {
+			r.Recorder.Event(newcrd, k8scorev1.EventTypeWarning, "FailedUpdateDeployment", err.Error())
+			return ctrl.Result{}, err
+		}
 	}
+
 	return ctrl.Result{}, nil
 }
 
