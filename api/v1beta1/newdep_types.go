@@ -20,26 +20,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // NewDepSpec defines the desired state of NewDep
 type NewDepSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of NewDep. Edit newdep_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Image image name <name:tag>
+	Image *string `json:"image,omitempty"`
+	// Replica number of pods
+	Replica *int32 `json:"replica,omitempty"`
 }
 
 // NewDepStatus defines the observed state of NewDep
 type NewDepStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// RealReplica number of pods
+	RealReplica int32 `json:"realReplica,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+//+kubebuilder:printcolumn:JSONPath=".status.realReplica",name=RealReplica,type=integer
 
 // NewDep is the Schema for the newdeps API
 type NewDep struct {
