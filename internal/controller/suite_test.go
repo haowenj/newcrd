@@ -32,7 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	appsv1beta1 "github.com/newcrd/api/v1beta1"
+	appsv1beta1 "github.com/haowenj/newcrd-api/api/v1beta1"
 	// +kubebuilder:scaffold:imports
 )
 

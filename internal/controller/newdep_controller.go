@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	appsv1beta1 "github.com/newcrd/api/v1beta1"
+	appsv1beta1 "github.com/haowenj/newcrd-api/api/v1beta1"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	k8scorev1 "k8s.io/api/core/v1"
 )

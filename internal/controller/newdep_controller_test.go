@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	appsv1beta1 "github.com/newcrd/api/v1beta1"
+	appsv1beta1 "github.com/haowenj/newcrd-api/api/v1beta1"
 )
 
 var _ = Describe("NewDep Controller", func() {
